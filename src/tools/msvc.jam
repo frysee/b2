@@ -595,12 +595,16 @@ rule configure-version-specific ( toolset : version : conditions )
         toolset.flags $(toolset).compile OPTIONS $(conditions)/<runtime-debugging>off/<runtime-link>static/<threading>single : /MT ;
         toolset.flags $(toolset).compile OPTIONS $(conditions)/<runtime-debugging>on/<runtime-link>static/<threading>single : /MTd ;
 
+        # ARM64EC needs another compiler flag.
+        toolset.flags $(toolset).compile OPTIONS $(conditions)/$(.cpu-arch-arm64ec) : "/arm64EC" ;
+
         # Specify target machine type so the linker will not need to guess.
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-amd64) : "/MACHINE:X64" ;
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-i386)  : "/MACHINE:X86" ;
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-ia64)  : "/MACHINE:IA64" ;
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-arm)   : "/MACHINE:ARM" ;
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-arm64) : "/MACHINE:ARM64" ;
+        toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-arm64ec) : "/MACHINE:ARM64EC" ;
 
         if [ version.version-less [ SPLIT_BY_CHARACTERS [ MATCH "^([0123456789.]+)" : $(version) ] : . ] : 11 ]
         {
@@ -1414,7 +1418,7 @@ local rule configure-really ( version ? : options * )
         local below-8.0 = [ MATCH "^([67]\\.)" : $(version) ] ;
         local below-11.0 = [ MATCH "^([6789]\\.|10\\.)" : $(version) ] ;
 
-        local cpu = i386 amd64 ia64 arm arm64 ;
+        local cpu = i386 amd64 ia64 arm arm64 arm64ec ;
         if $(below-8.0)
         {
             cpu = i386 ;
@@ -1429,6 +1433,7 @@ local rule configure-really ( version ? : options * )
         local setup-ia64 ;
         local setup-arm ;
         local setup-arm64 ;
+        local setup-arm64ec ;
         local setup-phone-i386 ;
         local setup-phone-arm ;
 
@@ -1487,6 +1492,7 @@ local rule configure-really ( version ? : options * )
             local default-setup-ia64  = vcvarsx86_ia64.bat ;
             local default-setup-arm   = vcvarsx86_arm.bat ;
             local default-setup-arm64 = vcvarsx86_arm64.bat ;
+            local default-setup-arm64ec = vcvarsx86_arm64.bat ;
             local default-setup-phone-i386 = vcvarsphonex86.bat ;
             local default-setup-phone-arm = vcvarsphonex86_arm.bat ;
 
@@ -1499,6 +1505,7 @@ local rule configure-really ( version ? : options * )
             local default-global-setup-options-ia64  = x86_ia64 ;
             local default-global-setup-options-arm   = x86_arm ;
             local default-global-setup-options-arm64 = x86_arm64 ;
+            local default-global-setup-options-arm64ec = x86_arm64 ;
 
             # When using 64-bit Windows, and targeting 64-bit, it is possible to
             # use a native 64-bit compiler, selected by the "amd64" & "ia64"
@@ -1533,6 +1540,7 @@ local rule configure-really ( version ? : options * )
             if [ MATCH ^(ARM64) : [ os.environ PROCESSOR_ARCHITECTURE ] ]
             {
                 default-global-setup-options-arm64 = arm64 ;
+                default-global-setup-options-arm64ec = arm64 ;
                 default-global-setup-options-amd64 = arm64_x64 ;
                 default-global-setup-options-i386 = arm64_x86 ;
             }
@@ -1588,6 +1596,7 @@ local rule configure-really ( version ? : options * )
         local default-assembler-ia64  = ias ;
         local default-assembler-arm   = armasm ;
         local default-assembler-arm64 = armasm64 ;
+        local default-assembler-arm64ec = ml64 ;
 
         # For the assembler the following options are turned on by default:
         #
@@ -1600,12 +1609,14 @@ local rule configure-really ( version ? : options * )
         local assembler-flags-ia64  = "-c -Zp4 -Cp -Cx" ;
         local assembler-flags-arm   = "" ;
         local assembler-flags-arm64 = "" ;
+        local assembler-flags-arm64ec = "-c -Zp4 -Cp -Cx" ;
 
         local assembler-output-flag-amd64 = -Fo ;
         local assembler-output-flag-i386  = -Fo ;
         local assembler-output-flag-ia64  = -Fo ;
         local assembler-output-flag-arm   = -o ;
         local assembler-output-flag-arm64 = -o ;
+        local assembler-output-flag-arm64ec = -Fo ;
 
         assembler = [ feature.get-values <assembler> : $(options) ] ;
 
@@ -2110,6 +2121,7 @@ _ = " " ;
 .cpu-arch-info-ia64  = ia64 64 ;
 .cpu-arch-info-arm   = arm  32 ;
 .cpu-arch-info-arm64 = arm  64 ;
+.cpu-arch-info-arm64ec = arm  64 ;
 
 # Fill explicit architecture and address model values
 for local cpu in [ MATCH "^\\.cpu-arch-info-(.*)" : [ VARNAMES $(__name__) ] ]
