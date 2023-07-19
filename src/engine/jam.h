@@ -434,6 +434,10 @@
     #define OSPLAT "OSPLAT=ARM64"
 #endif
 
+#if defined( _M_ARM64EC )
+    #define OSPLAT "OSPLAT=ARM64EC"
+#endif
+
 #ifdef __s390__
     #define OSPLAT "OSPLAT=390"
 #endif
